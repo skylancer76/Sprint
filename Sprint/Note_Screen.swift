@@ -22,6 +22,9 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
     private let audioEngine = AVAudioEngine()
     private var isRecording = false
     
+    // Store the final recognized transcript to avoid clearing it.
+    private var finalTranscript: String = ""
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -105,10 +108,6 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         isRecording.toggle()
     }
     
-    @IBAction func didTapNotesButton(_ sender: Any) {
-        // Implement additional notes functionality here.
-    }
-    
     @IBAction func didTapAIButton(_ sender: Any) {
         // Implement AI feature functionality here.
     }
@@ -188,14 +187,17 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self = self else { return }
             if let result = result {
-                let bestString = result.bestTranscription.formattedString
+                let newTranscript = result.bestTranscription.formattedString
+                // Only update if new transcript is not empty.
+                if !newTranscript.isEmpty {
+                    self.finalTranscript = newTranscript
+                }
                 DispatchQueue.main.async {
-                    // Create attributed text with white color.
                     let attributes: [NSAttributedString.Key: Any] = [
                         .foregroundColor: UIColor.white,
                         .font: self.bodyTextView.font ?? UIFont.systemFont(ofSize: 16)
                     ]
-                    self.bodyTextView.attributedText = NSAttributedString(string: bestString, attributes: attributes)
+                    self.bodyTextView.attributedText = NSAttributedString(string: self.finalTranscript, attributes: attributes)
                     self.bodyTextView.typingAttributes = attributes
                 }
             }

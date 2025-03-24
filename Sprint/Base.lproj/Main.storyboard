@@ -97,34 +97,27 @@
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                     <color key="backgroundColor" systemColor="secondarySystemBackgroundColor"/>
                     <items>
-                        <barButtonItem width="78.599999999999994" id="NWc-ns-Yeh" userLabel="Aa Button">
+                        <barButtonItem width="98.25" id="NWc-ns-Yeh" userLabel="Aa Button">
                             <imageReference key="image" image="textformat.alt" catalog="system" symbolScale="large"/>
                             <color key="tintColor" systemColor="labelColor"/>
                             <connections>
                                 <action selector="didTapAaButton:" destination="HAO-db-7RK" id="8V2-0z-66o"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem image="photo.on.rectangle" catalog="system" width="78.599999999999994" id="7MI-1p-l8q" userLabel="Image Button">
+                        <barButtonItem image="photo.on.rectangle" catalog="system" width="98.25" id="7MI-1p-l8q" userLabel="Image Button">
                             <color key="tintColor" systemColor="labelColor"/>
                             <connections>
                                 <action selector="didTapImageButton:" destination="HAO-db-7RK" id="Joq-98-HSt"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem width="78.599999999999994" id="GF3-lj-1dw" userLabel="Voice Recording Button">
+                        <barButtonItem width="98.25" id="GF3-lj-1dw" userLabel="Voice Recording Button">
                             <imageReference key="image" image="waveform" catalog="system" symbolScale="large"/>
                             <color key="tintColor" systemColor="labelColor"/>
                             <connections>
                                 <action selector="didTapVoiceButton:" destination="HAO-db-7RK" id="LdJ-Qq-WUw"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem width="78.599999999999994" id="Y9D-fb-Re6" userLabel="Notes Button">
-                            <imageReference key="image" image="document.on.document.fill" catalog="system" symbolScale="large"/>
-                            <color key="tintColor" systemColor="labelColor"/>
-                            <connections>
-                                <action selector="didTapNotesButton:" destination="HAO-db-7RK" id="sV5-j5-ROr"/>
-                            </connections>
-                        </barButtonItem>
-                        <barButtonItem width="78.599999999999994" id="biN-xE-BYK" userLabel="AI Button">
+                        <barButtonItem width="98.25" id="biN-xE-BYK" userLabel="AI Button">
                             <imageReference key="image" image="sparkles" catalog="system" symbolScale="large"/>
                             <color key="tintColor" systemColor="labelColor"/>
                             <connections>
@@ -157,7 +150,6 @@
     </scenes>
     <color key="tintColor" systemColor="systemPurpleColor"/>
     <resources>
-        <image name="document.on.document.fill" catalog="system" width="112" height="128"/>
         <image name="photo.on.rectangle" catalog="system" width="128" height="98"/>
         <image name="plus.circle.fill" catalog="system" width="128" height="123"/>
         <image name="sparkles" catalog="system" width="115" height="128"/>
@@ -167,13 +159,13 @@
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
-            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980392157" green="0.32156862745098042" blue="0.87058823529411766" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
