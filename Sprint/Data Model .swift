@@ -5,67 +5,86 @@ struct Note: Codable {
     var id: UUID
     var title: String
     
-  
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
-        self.title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
-        self.bodyRTFData = try container.decodeIfPresent(Data.self, forKey: .bodyRTFData)
-        self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
-        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
-    }
-
-
-    
-    private var bodyRTFData: Data?
-    
-    var body: NSAttributedString {
-        get {
-            guard let data = bodyRTFData else { return NSAttributedString(string: "") }
-            do {
-                return try NSAttributedString(
-                    data: data,
-                    options: [.documentType: NSAttributedString.DocumentType.rtf],
-                    documentAttributes: nil
-                )
-            } catch {
-                return NSAttributedString(string: "")
-            }
-        }
-        set {
-            do {
-                let rtfData = try newValue.data(
-                    from: NSRange(location: 0, length: newValue.length),
-                    documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
-                )
-                bodyRTFData = rtfData
-            } catch {
-                bodyRTFData = nil
-            }
-        }
-    }
+    /// The raw HTML content from the server. We'll parse it into an NSAttributedString.
+    var content: String?
     
     var createdAt: Date
     var updatedAt: Date
     
+    // MARK: - Computed Property: body
+    /// A computed property that interprets `content` (HTML) as an NSAttributedString,
+    /// and converts back to HTML when set.
+    var body: NSAttributedString {
+        get {
+            // If there's no HTML content, return a default string.
+            guard let htmlString = content, !htmlString.isEmpty else {
+                return NSAttributedString(string: "KYYYAAAA", attributes: [.foregroundColor: UIColor.white])
+            }
+            
+            do {
+                let data = Data(htmlString.utf8)
+                // Parse the HTML into an attributed string.
+                let attrString = try NSMutableAttributedString(
+                    data: data,
+                    options: [
+                        .documentType: NSAttributedString.DocumentType.html,
+                        .characterEncoding: String.Encoding.utf8.rawValue
+                    ],
+                    documentAttributes: nil
+                )
+                // Force the text color to white.
+                let fullRange = NSRange(location: 0, length: attrString.length)
+                attrString.addAttribute(.foregroundColor, value: UIColor.white, range: fullRange)
+                return attrString
+            } catch {
+                print("Error parsing HTML: \(error)")
+                // Fallback if parsing fails.
+                return NSAttributedString(string: "KYYYAAAA", attributes: [.foregroundColor: UIColor.white])
+            }
+        }
+        set {
+            // Convert the NSAttributedString back to HTML for storage in `content`.
+            let range = NSRange(location: 0, length: newValue.length)
+            let options: [NSAttributedString.DocumentAttributeKey: Any] = [
+                .documentType: NSAttributedString.DocumentType.html,
+                .characterEncoding: String.Encoding.utf8.rawValue
+            ]
+            do {
+                let htmlData = try newValue.data(from: range, documentAttributes: options)
+                content = String(data: htmlData, encoding: .utf8) ?? ""
+                // Debug print (optional):
+                // print("Converted NSAttributedString back to HTML: \(content ?? "")")
+            } catch {
+                print("Error converting NSAttributedString to HTML: \(error)")
+                content = "KYYYAAAA"
+            }
+        }
+    }
+    
+    // MARK: - Initializers
+    
+    /// For creating a new note locally.
     init(title: String, body: NSAttributedString = NSAttributedString()) {
         self.id = UUID()
         self.title = title
         self.createdAt = Date()
         self.updatedAt = Date()
         
-        // Convert attributed string to RTF
+        // Convert the NSAttributedString to HTML for `content`.
+        let range = NSRange(location: 0, length: body.length)
+        let options: [NSAttributedString.DocumentAttributeKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
         do {
-            let rtfData = try body.data(
-                from: NSRange(location: 0, length: body.length),
-                documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
-            )
-            self.bodyRTFData = rtfData
+            let htmlData = try body.data(from: range, documentAttributes: options)
+            self.content = String(data: htmlData, encoding: .utf8) ?? ""
         } catch {
-            self.bodyRTFData = nil
+            self.content = "KYYYAAAA"
         }
     }
     
+    /// A more detailed initializer for editing an existing note.
     init(id: UUID,
          title: String,
          body: NSAttributedString,
@@ -77,20 +96,53 @@ struct Note: Codable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         
+        // Convert the NSAttributedString to HTML for `content`.
+        let range = NSRange(location: 0, length: body.length)
+        let options: [NSAttributedString.DocumentAttributeKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
         do {
-            let rtfData = try body.data(
-                from: NSRange(location: 0, length: body.length),
-                documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
-            )
-            self.bodyRTFData = rtfData
+            let htmlData = try body.data(from: range, documentAttributes: options)
+            self.content = String(data: htmlData, encoding: .utf8) ?? ""
         } catch {
-            self.bodyRTFData = nil
+            self.content = "KYYYAAAA"
         }
     }
     
-    // Add coding keys, custom decode/encode if needed...
+    // MARK: - Coding Keys
     
-    // Example image upload function:
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case content
+        case createdAt
+        case updatedAt
+    }
+    
+    // MARK: - Decoding
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        self.content = try container.decodeIfPresent(String.self, forKey: .content)
+        self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+    }
+    
+    // MARK: - Encoding
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(content, forKey: .content)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+    
+    // MARK: - Image Upload
     static func uploadImage(_ image: UIImage,
                             to urlString: String = "https://sprint-six.vercel.app/api/files",
                             completion: @escaping (Result<String, Error>) -> Void) {
@@ -132,14 +184,14 @@ struct Note: Codable {
         }.resume()
     }
     
-    // Example fetchAllNotes:
+    // MARK: - Fetch All Notes
     static func fetchAllNotes(completion: @escaping (Result<[Note], Error>) -> Void) {
         guard let url = URL(string: "https://sprint-six.vercel.app/api/notes") else {
             completion(.failure(APIError.invalidURL))
             return
         }
         
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        URLSession.shared.dataTask(with: url) { data, _, error in
             if let error = error {
                 completion(.failure(error))
                 return
@@ -149,8 +201,6 @@ struct Note: Codable {
                 return
             }
             do {
-                // Suppose the server returns { "data": [Note], "total": ... }
-                // Adjust if your structure is different.
                 let decoder = JSONDecoder()
                 decoder.dateDecodingStrategy = .iso8601
                 let apiResponse = try decoder.decode(APIResponse<[Note]>.self, from: data)
@@ -162,12 +212,11 @@ struct Note: Codable {
     }
 }
 
-// Helper for standard API response shape.
+// MARK: - API Response & Error
 struct APIResponse<T: Codable>: Codable {
     let data: T
 }
 
-// Basic error enum
 enum APIError: Error {
     case invalidURL
     case noData

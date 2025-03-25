@@ -5,7 +5,7 @@ class Home_Screen: UIViewController, UICollectionViewDelegate, UICollectionViewD
     @IBOutlet var collectionView: UICollectionView!
     @IBOutlet weak var addNewCollection: UIImageView!
     
-    var notes: [Note] = []
+    static var notes: [Note] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -46,7 +46,7 @@ class Home_Screen: UIViewController, UICollectionViewDelegate, UICollectionViewD
             case .success(let notes):
                 print("Fetched notes: \(notes)")
                 DispatchQueue.main.async {
-                    self.notes = notes
+                    Home_Screen.notes = notes
                     self.collectionView.reloadData()
                 }
             case .failure(let error):
@@ -55,9 +55,27 @@ class Home_Screen: UIViewController, UICollectionViewDelegate, UICollectionViewD
         }
     }
     
+
+    // MARK: - UICollectionView Delegate
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        // Get the selected note from your data source.
+        let selectedNote = Home_Screen.notes[indexPath.item]
+        // Perform the segue, passing the selected note as the sender.
+        performSegue(withIdentifier: "goToNote", sender: selectedNote)
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToNote",
+           let destinationVC = segue.destination as? Note_Screen,
+           let selectedNote = sender as? Note {
+            destinationVC.note = selectedNote
+        }
+    }
+
+
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
-        return notes.count
+        return Home_Screen.notes.count
     }
     
     func collectionView(_ collectionView: UICollectionView,
@@ -69,7 +87,7 @@ class Home_Screen: UIViewController, UICollectionViewDelegate, UICollectionViewD
             return UICollectionViewCell()
         }
         
-        let item = notes[indexPath.item]
+        let item = Home_Screen.notes[indexPath.item]
         
         cell.noteTitleLabel.text = item.title
         cell.secBackView.layer.cornerRadius = 12
@@ -79,6 +97,7 @@ class Home_Screen: UIViewController, UICollectionViewDelegate, UICollectionViewD
         
         return cell
     }
+    
     
     @objc func addNewCollectionTapped() {
         performSegue(withIdentifier: "goToNote", sender: self)

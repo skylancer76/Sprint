@@ -19,20 +19,27 @@ class Note_Screen: UIViewController,
     @IBOutlet weak var bodyTextView: UITextView!
     @IBOutlet var noteAccessoryToolBar: UIToolbar!
     
-    // MARK: - Speech Recognition Properties
+    // If this is nil, we are creating a new note. If not nil, we are editing.
+    var note: Note?
+    
+    // MARK: - Speech Recognition
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private var isRecording = false
-    
-    // Store the final recognized transcript to avoid clearing it.
     private var finalTranscript: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Set up gradient background.
+        // If editing an existing note, populate the fields.
+        if let existingNote = note {
+            titleTextField.text = existingNote.title
+            bodyTextView.attributedText = existingNote.body
+        }
+        
+        // Gradient background
         let gradientView = UIView(frame: view.bounds)
         gradientView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(gradientView)
@@ -49,7 +56,7 @@ class Note_Screen: UIViewController,
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 0.5)
         gradientView.layer.insertSublayer(gradientLayer, at: 0)
         
-        // Configure text view appearance.
+        // TextView appearance
         bodyTextView.backgroundColor = .clear
         bodyTextView.textColor = .white
         bodyTextView.typingAttributes = [
@@ -57,17 +64,17 @@ class Note_Screen: UIViewController,
             .foregroundColor: UIColor.white
         ]
         
-        // Set dynamic date in the navigation title.
+        // Dynamic date in nav title
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMM d"
         let dateString = formatter.string(from: Date())
         self.navigationItem.title = dateString
         
-        // Set delegates.
+        // Delegates
         titleTextField.delegate = self
         bodyTextView.delegate = self
         
-        // Request Speech Recognition Authorization.
+        // Speech recognition authorization
         SFSpeechRecognizer.requestAuthorization { authStatus in
             switch authStatus {
             case .authorized:
@@ -88,21 +95,36 @@ class Note_Screen: UIViewController,
     
     // MARK: - IBActions
     
-    /// The Save button: uploads images, then calls your backend to save the note.
     @IBAction func saveButtonTapped(_ sender: Any) {
-        let newNote = Note(title: titleTextField.text ?? "",
-                           body: bodyTextView.attributedText)
+        // Build a new note from the UI fields.
+        let newBody = bodyTextView.attributedText
+        let newTitle = titleTextField.text ?? ""
         
-        uploadImagesAndSave(note: newNote)
+        // If we're editing an existing note, preserve its id, createdAt, etc.
+        if let existingNote = note {
+            let updatedNote = Note(
+                id: existingNote.id,
+                title: newTitle,
+                body: newBody ?? NSAttributedString(string:"KYAAAASDFGHJK" ),
+                createdAt: existingNote.createdAt,
+                updatedAt: Date()
+            )
+            // Upload images, then call update (PUT).
+            uploadImagesAndSave(note: updatedNote, isUpdate: true)
+        } else {
+            // Creating a brand-new note
+            let newNote = Note(title: newTitle, body: newBody ?? NSAttributedString(string:"KYAAAASDFGHJK" ))
+            // Upload images, then call create (POST).
+            uploadImagesAndSave(note: newNote, isUpdate: false)
+        }
     }
     
-    /// Upload images in the note's attributed text, replace them with placeholders,
-    /// then call an API to create/update the note on the server.
-    private func uploadImagesAndSave(note: Note) {
+    /// Upload images in the note's body, then create or update the note (depending on isUpdate).
+    private func uploadImagesAndSave(note: Note, isUpdate: Bool) {
         let mutableAttrString = NSMutableAttributedString(attributedString: note.body)
         let fullRange = NSRange(location: 0, length: mutableAttrString.length)
         
-        // Find all image attachments
+        // Find all attachments
         var attachments: [(range: NSRange, attachment: NSTextAttachment)] = []
         mutableAttrString.enumerateAttribute(.attachment, in: fullRange, options: []) { value, range, _ in
             if let attachment = value as? NSTextAttachment {
@@ -110,9 +132,13 @@ class Note_Screen: UIViewController,
             }
         }
         
-        // If there are no attachments, just save directly
         guard !attachments.isEmpty else {
-            saveNoteToServer(note: note)
+            // If no attachments, directly create or update
+            if isUpdate {
+                updateNoteOnServer(note: note)
+            } else {
+                createNoteOnServer(note: note)
+            }
             return
         }
         
@@ -121,12 +147,11 @@ class Note_Screen: UIViewController,
         for (range, attachment) in attachments {
             if let image = attachment.image {
                 dispatchGroup.enter()
-                // Upload image
                 Note.uploadImage(image) { result in
                     defer { dispatchGroup.leave() }
                     switch result {
                     case .success(let urlString):
-                        // Replace the attachment with a placeholder or URL reference
+                        // Replace the image with a placeholder or URL
                         let placeholder = NSAttributedString(
                             string: "[Image: \(urlString)]",
                             attributes: [.foregroundColor: UIColor.white]
@@ -148,44 +173,32 @@ class Note_Screen: UIViewController,
                 createdAt: note.createdAt,
                 updatedAt: Date()
             )
-            self.saveNoteToServer(note: finalNote)
+            // Now actually create or update on the server
+            if isUpdate {
+                self.updateNoteOnServer(note: finalNote)
+            } else {
+                self.createNoteOnServer(note: finalNote)
+            }
         }
     }
     
-    /// Saves the note by calling your API endpoint (PUT /api/notes/:id or POST /api/notes).
-
-    private func saveNoteToServer(note: Note) {
-        // Use the endpoint for creating a new note.
+    // MARK: - Create vs. Update
+    
+    /// POST /api/notes (for a new note)
+    private func createNoteOnServer(note: Note) {
         guard let url = URL(string: "https://sprint-six.vercel.app/api/notes") else {
             print("Invalid URL")
             return
         }
+        let htmlString = noteToHTML(note)
         
-        // Convert the note's attributed body to HTML.
-        let range = NSRange(location: 0, length: note.body.length)
-        let options: [NSAttributedString.DocumentAttributeKey: Any] = [
-            .documentType: NSAttributedString.DocumentType.html,
-            .characterEncoding: String.Encoding.utf8.rawValue
-        ]
-        var htmlString = ""
-        do {
-            let htmlData = try note.body.data(from: range, documentAttributes: options)
-            if let html = String(data: htmlData, encoding: .utf8) {
-                htmlString = html
-            }
-        } catch {
-            print("Error converting NSAttributedString to HTML: \(error)")
-            return
-        }
-        
-        // Prepare the JSON payload.
         let payload: [String: Any] = [
             "title": note.title,
             "content": htmlString
         ]
         
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"  // Use POST to create a new note
+        request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
@@ -197,22 +210,76 @@ class Note_Screen: UIViewController,
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Network error while saving note: \(error)")
+                print("Network error while creating note: \(error)")
                 return
             }
-            
             guard let data = data, !data.isEmpty else {
-                print("No data received after saving note.")
+                print("No data received after creating note.")
                 return
             }
-            
-            // Optionally, you could parse the response here.
-            print("Successfully saved note to server.")
+            print("Successfully CREATED note on server.")
         }
         .resume()
     }
-
-
+    
+    /// PUT /api/notes/:id (for an existing note)
+    private func updateNoteOnServer(note: Note) {
+        guard let url = URL(string: "https://sprint-six.vercel.app/api/notes/\(note.id)") else {
+            print("Invalid URL for update")
+            return
+        }
+        
+        let htmlString = noteToHTML(note)
+        
+        let payload: [String: Any] = [
+            "title": note.title,
+            "content": htmlString
+        ]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            print("Error encoding payload for update: \(error)")
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Network error while updating note: \(error)")
+                return
+            }
+            guard let data = data, !data.isEmpty else {
+                print("No data received after updating note.")
+                return
+            }
+            print("Successfully UPDATED note on server.")
+        }
+        .resume()
+    }
+    
+    /// Helper to convert note's body (NSAttributedString) to HTML.
+    private func noteToHTML(_ note: Note) -> String {
+        let range = NSRange(location: 0, length: note.body.length)
+        let options: [NSAttributedString.DocumentAttributeKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        do {
+            let htmlData = try note.body.data(from: range, documentAttributes: options)
+            if let html = String(data: htmlData, encoding: .utf8) {
+                return html
+            }
+        } catch {
+            print("Error converting NSAttributedString to HTML: \(error)")
+        }
+        return ""
+    }
+    
+    // MARK: - IBActions (Formatting, AI, etc.)
     
     @IBAction func didTapAaButton(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
@@ -241,41 +308,37 @@ class Note_Screen: UIViewController,
         isRecording.toggle()
     }
     
-    /// AI button: show a spinner, call /generate, parse HTML -> NSAttributedString, present AI screen.
     @IBAction func didTapAIButton(_ sender: Any) {
         let spinner = UIActivityIndicatorView(style: .large)
-           spinner.center = view.center
-           spinner.startAnimating()
-           view.addSubview(spinner)
-           
-           generateAIText(for: bodyTextView.attributedText.string) { [weak self] result in
-               DispatchQueue.main.async {
-                   spinner.removeFromSuperview()
-                   guard let self = self else { return }
-                   
-                   switch result {
-                   case .success(let generatedAttrString):
-                       // Present the AI screen using the generated attributed string.
-                       let aiVC = AIViewController()
-                       aiVC.aiInitialAttributedText = generatedAttrString
-                       aiVC.onReplace = { newAttributedText in
-                           // Replace the note body with the AI-generated text.
-                           // Ensure white text is enforced.
-                           let mutable = NSMutableAttributedString(attributedString: newAttributedText)
-                           let range = NSRange(location: 0, length: mutable.length)
-                           mutable.addAttribute(.foregroundColor, value: UIColor.white, range: range)
-                           self.bodyTextView.attributedText = mutable
-                       }
-                       
-                       let nav = UINavigationController(rootViewController: aiVC)
-                       nav.modalPresentationStyle = .pageSheet
-                       self.present(nav, animated: true)
-                       
-                   case .failure(let error):
-                       print("Failed to generate AI text:", error)
-                   }
-               }
-           }
+        spinner.center = view.center
+        spinner.startAnimating()
+        view.addSubview(spinner)
+        
+        generateAIText(for: bodyTextView.attributedText.string) { [weak self] result in
+            DispatchQueue.main.async {
+                spinner.removeFromSuperview()
+                guard let self = self else { return }
+                
+                switch result {
+                case .success(let generatedAttrString):
+                    let aiVC = AIViewController()
+                    aiVC.aiInitialAttributedText = generatedAttrString
+                    aiVC.onReplace = { newAttributedText in
+                        let mutable = NSMutableAttributedString(attributedString: newAttributedText)
+                        let range = NSRange(location: 0, length: mutable.length)
+                        mutable.addAttribute(.foregroundColor, value: UIColor.white, range: range)
+                        self.bodyTextView.attributedText = mutable
+                    }
+                    
+                    let nav = UINavigationController(rootViewController: aiVC)
+                    nav.modalPresentationStyle = .pageSheet
+                    self.present(nav, animated: true)
+                    
+                case .failure(let error):
+                    print("Failed to generate AI text:", error)
+                }
+            }
+        }
     }
     
     // MARK: - UIImagePickerControllerDelegate
@@ -286,38 +349,30 @@ class Note_Screen: UIViewController,
         
         guard let image = info[.originalImage] as? UIImage else { return }
         
-        // Process the image to have fixed dimensions and rounded corners.
         let targetSize = CGSize(width: 360, height: 170)
         guard let processedImage = resizeAndRoundImage(image, targetSize: targetSize, cornerRadius: 12) else { return }
         
-        // Create an NSTextAttachment with the processed image.
         let attachment = NSTextAttachment()
         attachment.image = processedImage
         attachment.bounds = CGRect(x: 0, y: 0, width: targetSize.width, height: targetSize.height)
         
-        // Insert the attachment into the text view at the current cursor location.
         let attrStringWithImage = NSAttributedString(attachment: attachment)
         let mutableAttrText = NSMutableAttributedString(attributedString: bodyTextView.attributedText)
         let selectedRange = bodyTextView.selectedRange
         mutableAttrText.insert(attrStringWithImage, at: selectedRange.location)
         
-        // Ensure that the entire attributed text has white text color.
         let entireRange = NSRange(location: 0, length: mutableAttrText.length)
         mutableAttrText.addAttribute(.foregroundColor, value: UIColor.white, range: entireRange)
         
         bodyTextView.attributedText = mutableAttrText
-        
-        // Move the cursor after the inserted image.
         bodyTextView.selectedRange = NSRange(location: selectedRange.location + 1, length: 0)
         
-        // Reapply typing attributes so new text remains white.
         bodyTextView.typingAttributes = [
             .font: bodyTextView.font ?? UIFont.systemFont(ofSize: 16),
             .foregroundColor: UIColor.white
         ]
     }
     
-    /// Helper function: Resize and round the image.
     func resizeAndRoundImage(_ image: UIImage, targetSize: CGSize, cornerRadius: CGFloat) -> UIImage? {
         let renderer = UIGraphicsImageRenderer(size: targetSize)
         let roundedImage = renderer.image { _ in
@@ -329,7 +384,7 @@ class Note_Screen: UIViewController,
         return roundedImage
     }
     
-    // MARK: - Speech Recognition Functions
+    // MARK: - Speech Recognition
     
     func startRecording() {
         recognitionTask?.cancel()
@@ -398,12 +453,8 @@ class Note_Screen: UIViewController,
         print("Recording stopped.")
     }
     
-    // MARK: - The generateAIText function (HTML to NSAttributedString)
-    /// This version sends "content" and "prompt" to /api/generate,
-    /// and expects an HTML string in "generatedText".
-    /// We convert the HTML to an NSAttributedString and return that.
+    // MARK: - AI Generation (unchanged except for clarifying doc)
     
- 
     func generateAIText(for noteText: String,
                         completion: @escaping (Result<NSAttributedString, Error>) -> Void) {
         guard let url = URL(string: "https://sprint-six.vercel.app/api/generate") else {
@@ -411,7 +462,6 @@ class Note_Screen: UIViewController,
             return
         }
         
-        // Send the note text as the prompt (adjust the payload keys if needed)
         let payload: [String: Any] = [
             "content": noteText,
             "prompt": "Rephrase and write a comprehensive document that I can present in the meeting. PS: preserve the images"
@@ -439,7 +489,6 @@ class Note_Screen: UIViewController,
                 return
             }
             
-            // Convert the HTML response directly to an NSAttributedString
             let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
                 .documentType: NSAttributedString.DocumentType.html,
                 .characterEncoding: String.Encoding.utf8.rawValue
@@ -447,9 +496,8 @@ class Note_Screen: UIViewController,
             
             do {
                 let attrStr = try NSMutableAttributedString(data: data,
-                                                              options: options,
-                                                              documentAttributes: nil)
-                // Force the entire string to use white text
+                                                            options: options,
+                                                            documentAttributes: nil)
                 let fullRange = NSRange(location: 0, length: attrStr.length)
                 attrStr.addAttribute(.foregroundColor, value: UIColor.white, range: fullRange)
                 
@@ -460,6 +508,4 @@ class Note_Screen: UIViewController,
         }
         .resume()
     }
-
-   
 }
