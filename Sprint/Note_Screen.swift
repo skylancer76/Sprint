@@ -89,7 +89,17 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
     }
     
     @IBAction func didTapAaButton(_ sender: Any) {
-        // Implement formatting options here.
+        
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let formatVC = storyboard.instantiateViewController(withIdentifier: "FormatViewController") as? FormatViewController {
+            
+            formatVC.targetTextView = bodyTextView
+            if let sheet = formatVC.sheetPresentationController {
+                sheet.detents = [.medium()]
+            }
+            
+            present(formatVC, animated: true, completion: nil)
+        }
     }
     
     @IBAction func didTapImageButton(_ sender: Any) {

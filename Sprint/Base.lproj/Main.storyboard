@@ -129,6 +129,141 @@
             </objects>
             <point key="canvasLocation" x="1927.4809160305342" y="3.5211267605633805"/>
         </scene>
+        <!--Format View Controller-->
+        <scene sceneID="9mu-oq-mB4">
+            <objects>
+                <viewController storyboardIdentifier="FormatViewController" id="2yx-tX-SrU" customClass="FormatViewController" customModule="Sprint" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Csg-lJ-TXC">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Format" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2Cf-uE-mEs">
+                                <rect key="frame" x="16" y="79" width="77.333333333333329" height="28.666666666666671"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="24"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <stackView opaque="NO" contentMode="scaleToFill" spacing="22" translatesAutoresizingMaskIntoConstraints="NO" id="LXd-Dv-KPO">
+                                <rect key="frame" x="16" y="201.33333333333334" width="361" height="42.666666666666657"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="smT-Ek-1pK">
+                                        <rect key="frame" x="0.0" y="0.0" width="40" height="42.666666666666664"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="Ez9-ZY-uK6"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="opaqueSeparatorColor"/>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="filled" title="B">
+                                            <fontDescription key="titleFontDescription" type="boldSystem" pointSize="24"/>
+                                        </buttonConfiguration>
+                                        <connections>
+                                            <action selector="boldButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="Nw7-5A-HRY"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="249" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="QjF-Nr-4Bx">
+                                        <rect key="frame" x="62.000000000000007" y="0.0" width="93.666666666666686" height="42.666666666666664"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="93.670000000000002" id="VZc-Ux-WSy"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="opaqueSeparatorColor"/>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="filled" image="italic" catalog="system"/>
+                                        <connections>
+                                            <action selector="italicButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="Zib-IX-6ym"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bHk-gc-cyu">
+                                        <rect key="frame" x="177.66666666666666" y="0.0" width="41.666666666666657" height="42.666666666666664"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="etu-QS-1zv"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="opaqueSeparatorColor"/>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="filled" image="underline" catalog="system"/>
+                                        <connections>
+                                            <action selector="underlineButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="GA2-tJ-OEH"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" horizontalCompressionResistancePriority="749" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SXJ-OD-IU2">
+                                        <rect key="frame" x="241.33333333333329" y="0.0" width="46.666666666666657" height="42.666666666666664"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="d22-RP-Wyw"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="opaqueSeparatorColor"/>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="filled" image="strikethrough" catalog="system"/>
+                                        <connections>
+                                            <action selector="strikethroughButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="Z8B-t2-RUd"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Up0-bd-Tvc">
+                                        <rect key="frame" x="310" y="0.0" width="51" height="42.666666666666664"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="tBH-4m-9KB"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="opaqueSeparatorColor"/>
+                                        <state key="normal" title="Button"/>
+                                        <buttonConfiguration key="configuration" style="filled" image="list.bullet" catalog="system"/>
+                                        <connections>
+                                            <action selector="bulletButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="m3N-Of-6up"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <color key="backgroundColor" systemColor="secondarySystemBackgroundColor"/>
+                            </stackView>
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="0CW-KH-fRS">
+                                <rect key="frame" x="16" y="140.33333333333334" width="361" height="32"/>
+                                <segments>
+                                    <segment title="Title"/>
+                                    <segment title="Heading"/>
+                                    <segment title="Subheading"/>
+                                    <segment title="Body"/>
+                                </segments>
+                                <connections>
+                                    <action selector="styleSegmentChanged:" destination="2yx-tX-SrU" eventType="valueChanged" id="ET6-Mo-TzK"/>
+                                </connections>
+                            </segmentedControl>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="D6W-7R-iwa">
+                                <rect key="frame" x="343.33333333333331" y="76" width="49.666666666666686" height="34.333333333333343"/>
+                                <color key="tintColor" systemColor="secondaryLabelColor"/>
+                                <state key="normal" title="Button"/>
+                                <buttonConfiguration key="configuration" style="plain">
+                                    <imageReference key="image" image="multiply.circle.fill" catalog="system" symbolScale="large"/>
+                                </buttonConfiguration>
+                                <connections>
+                                    <action selector="closeButtonTapped:" destination="2yx-tX-SrU" eventType="touchUpInside" id="JmS-x7-tOE"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="9zh-Mk-h1W"/>
+                        <color key="backgroundColor" systemColor="secondarySystemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="0CW-KH-fRS" firstAttribute="leading" secondItem="9zh-Mk-h1W" secondAttribute="leading" constant="16" id="A9I-h2-ore"/>
+                            <constraint firstItem="LXd-Dv-KPO" firstAttribute="top" secondItem="0CW-KH-fRS" secondAttribute="bottom" constant="30" id="Aei-Xa-o0c"/>
+                            <constraint firstItem="2Cf-uE-mEs" firstAttribute="leading" secondItem="9zh-Mk-h1W" secondAttribute="leading" constant="16" id="BeT-23-P2r"/>
+                            <constraint firstItem="9zh-Mk-h1W" firstAttribute="trailing" secondItem="0CW-KH-fRS" secondAttribute="trailing" constant="16" id="F3E-mC-Vrs"/>
+                            <constraint firstItem="9zh-Mk-h1W" firstAttribute="trailing" secondItem="LXd-Dv-KPO" secondAttribute="trailing" constant="16" id="I7U-0z-Sh9"/>
+                            <constraint firstItem="LXd-Dv-KPO" firstAttribute="leading" secondItem="9zh-Mk-h1W" secondAttribute="leading" constant="16" id="MTV-zG-nZJ"/>
+                            <constraint firstItem="D6W-7R-iwa" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="2Cf-uE-mEs" secondAttribute="trailing" constant="8" symbolic="YES" id="Tgq-CD-uYb"/>
+                            <constraint firstItem="2Cf-uE-mEs" firstAttribute="top" secondItem="9zh-Mk-h1W" secondAttribute="top" constant="20" id="Th8-6a-Enf"/>
+                            <constraint firstItem="D6W-7R-iwa" firstAttribute="top" secondItem="9zh-Mk-h1W" secondAttribute="top" constant="17" id="WkH-j7-fVp"/>
+                            <constraint firstItem="0CW-KH-fRS" firstAttribute="top" secondItem="D6W-7R-iwa" secondAttribute="bottom" constant="30" id="icQ-hd-tf4"/>
+                            <constraint firstItem="9zh-Mk-h1W" firstAttribute="trailing" secondItem="D6W-7R-iwa" secondAttribute="trailing" id="sLs-MN-e2B"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="boldButton" destination="smT-Ek-1pK" id="z6U-vj-Svi"/>
+                        <outlet property="bulletButton" destination="Up0-bd-Tvc" id="vJP-ZY-3nD"/>
+                        <outlet property="italicButton" destination="QjF-Nr-4Bx" id="ZdN-WY-UjA"/>
+                        <outlet property="strikethroughButton" destination="SXJ-OD-IU2" id="kdz-Yh-BSw"/>
+                        <outlet property="styleSegmentedControl" destination="0CW-KH-fRS" id="4lc-Zr-S5F"/>
+                        <outlet property="underlineButton" destination="bHk-gc-cyu" id="GGq-L5-aTr"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Pjc-fa-rhQ" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2777.8625954198474" y="3.5211267605633805"/>
+        </scene>
         <!--Navigation Controller-->
         <scene sceneID="Bev-jz-bko">
             <objects>
@@ -150,22 +285,33 @@
     </scenes>
     <color key="tintColor" systemColor="systemPurpleColor"/>
     <resources>
+        <image name="italic" catalog="system" width="115" height="128"/>
+        <image name="list.bullet" catalog="system" width="128" height="87"/>
+        <image name="multiply.circle.fill" catalog="system" width="128" height="123"/>
         <image name="photo.on.rectangle" catalog="system" width="128" height="98"/>
         <image name="plus.circle.fill" catalog="system" width="128" height="123"/>
         <image name="sparkles" catalog="system" width="115" height="128"/>
+        <image name="strikethrough" catalog="system" width="128" height="101"/>
         <image name="textformat.alt" catalog="system" width="128" height="78"/>
+        <image name="underline" catalog="system" width="105" height="128"/>
         <image name="waveform" catalog="system" width="125" height="128"/>
         <systemColor name="labelColor">
             <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
+        <systemColor name="opaqueSeparatorColor">
+            <color red="0.77647058820000003" green="0.77647058820000003" blue="0.7843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="secondaryLabelColor">
+            <color red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
-            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemPurpleColor">
-            <color red="0.68627450980392157" green="0.32156862745098042" blue="0.87058823529411766" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.68627450980000004" green="0.32156862749999998" blue="0.87058823529999996" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>
