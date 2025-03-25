@@ -13,19 +13,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         
-        guard let windowScene = (scene as? UIWindowScene) else { return }
-        window = UIWindow(windowScene: windowScene)
-        
-        // Add a global tap gesture recognizer to dismiss the keyboard
-        let tapGesture = UITapGestureRecognizer(target: window, action: #selector(UIView.endEditing))
-        tapGesture.cancelsTouchesInView = false
-        window?.addGestureRecognizer(tapGesture)
-        
-        // Add a global swipe down gesture recognizer to dismiss the keyboard
-        let swipeGesture = UISwipeGestureRecognizer(target: window, action: #selector(UIView.endEditing))
-        swipeGesture.direction = .down
-        swipeGesture.cancelsTouchesInView = false
-        window?.addGestureRecognizer(swipeGesture)
+        guard (scene is UIWindowScene) else { return }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
