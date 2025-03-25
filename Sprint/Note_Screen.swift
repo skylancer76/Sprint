@@ -9,8 +9,12 @@ import UIKit
 import Speech
 import AVFoundation
 
-class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-
+class Note_Screen: UIViewController,
+                   UITextFieldDelegate,
+                   UITextViewDelegate,
+                   UIImagePickerControllerDelegate,
+                   UINavigationControllerDelegate
+{
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var bodyTextView: UITextView!
     @IBOutlet var noteAccessoryToolBar: UIToolbar!
@@ -49,8 +53,8 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         bodyTextView.backgroundColor = .clear
         bodyTextView.textColor = .white
         bodyTextView.typingAttributes = [
-            NSAttributedString.Key.font: bodyTextView.font ?? UIFont.systemFont(ofSize: 16),
-            NSAttributedString.Key.foregroundColor: UIColor.white
+            .font: bodyTextView.font ?? UIFont.systemFont(ofSize: 16),
+            .foregroundColor: UIColor.white
         ]
         
         // Set dynamic date in the navigation title.
@@ -84,20 +88,111 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
     
     // MARK: - IBActions
     
+    /// The Save button: uploads images, then calls your backend to save the note.
     @IBAction func saveButtonTapped(_ sender: Any) {
-        // Implement save functionality here.
+        let newNote = Note(title: titleTextField.text ?? "",
+                           body: bodyTextView.attributedText)
+        
+        uploadImagesAndSave(note: newNote)
+    }
+    
+    /// Upload images in the note's attributed text, replace them with placeholders,
+    /// then call an API to create/update the note on the server.
+    private func uploadImagesAndSave(note: Note) {
+        let mutableAttrString = NSMutableAttributedString(attributedString: note.body)
+        let fullRange = NSRange(location: 0, length: mutableAttrString.length)
+        
+        // Find all image attachments
+        var attachments: [(range: NSRange, attachment: NSTextAttachment)] = []
+        mutableAttrString.enumerateAttribute(.attachment, in: fullRange, options: []) { value, range, _ in
+            if let attachment = value as? NSTextAttachment {
+                attachments.append((range, attachment))
+            }
+        }
+        
+        // If there are no attachments, just save directly
+        guard !attachments.isEmpty else {
+            saveNoteToServer(note: note)
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        
+        for (range, attachment) in attachments {
+            if let image = attachment.image {
+                dispatchGroup.enter()
+                // Upload image
+                Note.uploadImage(image) { result in
+                    defer { dispatchGroup.leave() }
+                    switch result {
+                    case .success(let urlString):
+                        // Replace the attachment with a placeholder or URL reference
+                        let placeholder = NSAttributedString(
+                            string: "[Image: \(urlString)]",
+                            attributes: [.foregroundColor: UIColor.white]
+                        )
+                        mutableAttrString.replaceCharacters(in: range, with: placeholder)
+                    case .failure(let error):
+                        print("Image upload failed: \(error)")
+                    }
+                }
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
+            let finalNote = Note(
+                id: note.id,
+                title: note.title,
+                body: mutableAttrString,
+                createdAt: note.createdAt,
+                updatedAt: Date()
+            )
+            self.saveNoteToServer(note: finalNote)
+        }
+    }
+    
+    /// Saves the note by calling your API endpoint (PUT /api/notes/:id or POST /api/notes).
+    private func saveNoteToServer(note: Note) {
+        guard let url = URL(string: "https://sprint-six.vercel.app/api/notes/\(note.id)") else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"  // or "POST" if creating a new note
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            request.httpBody = try encoder.encode(note)
+        } catch {
+            print("Encoding error: \(error)")
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Network error: \(error)")
+                return
+            }
+            guard let data = data, !data.isEmpty else {
+                print("No data received.")
+                return
+            }
+            print("Successfully saved note to server.")
+        }
+        .resume()
     }
     
     @IBAction func didTapAaButton(_ sender: Any) {
-        
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         if let formatVC = storyboard.instantiateViewController(withIdentifier: "FormatViewController") as? FormatViewController {
-            
             formatVC.targetTextView = bodyTextView
             if let sheet = formatVC.sheetPresentationController {
                 sheet.detents = [.medium()]
             }
-            
             present(formatVC, animated: true, completion: nil)
         }
     }
@@ -118,8 +213,41 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         isRecording.toggle()
     }
     
+    /// AI button: show a spinner, call /generate, parse HTML -> NSAttributedString, present AI screen.
     @IBAction func didTapAIButton(_ sender: Any) {
-        // Implement AI feature functionality here.
+        let spinner = UIActivityIndicatorView(style: .large)
+           spinner.center = view.center
+           spinner.startAnimating()
+           view.addSubview(spinner)
+           
+           generateAIText(for: bodyTextView.attributedText.string) { [weak self] result in
+               DispatchQueue.main.async {
+                   spinner.removeFromSuperview()
+                   guard let self = self else { return }
+                   
+                   switch result {
+                   case .success(let generatedAttrString):
+                       // Present the AI screen using the generated attributed string.
+                       let aiVC = AIViewController()
+                       aiVC.aiInitialAttributedText = generatedAttrString
+                       aiVC.onReplace = { newAttributedText in
+                           // Replace the note body with the AI-generated text.
+                           // Ensure white text is enforced.
+                           let mutable = NSMutableAttributedString(attributedString: newAttributedText)
+                           let range = NSRange(location: 0, length: mutable.length)
+                           mutable.addAttribute(.foregroundColor, value: UIColor.white, range: range)
+                           self.bodyTextView.attributedText = mutable
+                       }
+                       
+                       let nav = UINavigationController(rootViewController: aiVC)
+                       nav.modalPresentationStyle = .pageSheet
+                       self.present(nav, animated: true)
+                       
+                   case .failure(let error):
+                       print("Failed to generate AI text:", error)
+                   }
+               }
+           }
     }
     
     // MARK: - UIImagePickerControllerDelegate
@@ -156,15 +284,15 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         
         // Reapply typing attributes so new text remains white.
         bodyTextView.typingAttributes = [
-            NSAttributedString.Key.font: bodyTextView.font ?? UIFont.systemFont(ofSize: 16),
-            NSAttributedString.Key.foregroundColor: UIColor.white
+            .font: bodyTextView.font ?? UIFont.systemFont(ofSize: 16),
+            .foregroundColor: UIColor.white
         ]
     }
     
-    // Helper function: Resize and round the image.
+    /// Helper function: Resize and round the image.
     func resizeAndRoundImage(_ image: UIImage, targetSize: CGSize, cornerRadius: CGFloat) -> UIImage? {
         let renderer = UIGraphicsImageRenderer(size: targetSize)
-        let roundedImage = renderer.image { context in
+        let roundedImage = renderer.image { _ in
             let rect = CGRect(origin: .zero, size: targetSize)
             let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
             path.addClip()
@@ -193,12 +321,10 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         recognitionRequest.shouldReportPartialResults = true
         
         let inputNode = audioEngine.inputNode
-        
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
             guard let self = self else { return }
             if let result = result {
                 let newTranscript = result.bestTranscription.formattedString
-                // Only update if new transcript is not empty.
                 if !newTranscript.isEmpty {
                     self.finalTranscript = newTranscript
                 }
@@ -220,7 +346,7 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         }
         
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, when in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             recognitionRequest.append(buffer)
         }
         
@@ -241,8 +367,71 @@ class Note_Screen: UIViewController, UITextFieldDelegate, UITextViewDelegate, UI
         recognitionTask?.cancel()
         recognitionRequest = nil
         recognitionTask = nil
-        
         print("Recording stopped.")
     }
-}
+    
+    // MARK: - The generateAIText function (HTML to NSAttributedString)
+    /// This version sends "content" and "prompt" to /api/generate,
+    /// and expects an HTML string in "generatedText".
+    /// We convert the HTML to an NSAttributedString and return that.
+    
+ 
+    func generateAIText(for noteText: String,
+                        completion: @escaping (Result<NSAttributedString, Error>) -> Void) {
+        guard let url = URL(string: "https://sprint-six.vercel.app/api/generate") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+        
+        // Send the note text as the prompt (adjust the payload keys if needed)
+        let payload: [String: Any] = [
+            "content": noteText,
+            "prompt": "Rephrase and write a comprehensive document that I can present in the meeting. PS: preserve the images"
+        ]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data, !data.isEmpty else {
+                completion(.failure(APIError.noData))
+                return
+            }
+            
+            // Convert the HTML response directly to an NSAttributedString
+            let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+                .documentType: NSAttributedString.DocumentType.html,
+                .characterEncoding: String.Encoding.utf8.rawValue
+            ]
+            
+            do {
+                let attrStr = try NSMutableAttributedString(data: data,
+                                                              options: options,
+                                                              documentAttributes: nil)
+                // Force the entire string to use white text
+                let fullRange = NSRange(location: 0, length: attrStr.length)
+                attrStr.addAttribute(.foregroundColor, value: UIColor.white, range: fullRange)
+                
+                completion(.success(attrStr))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+        .resume()
+    }
 
+   
+}
