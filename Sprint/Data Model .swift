@@ -5,15 +5,16 @@ struct Note: Codable {
     var id: UUID
     var title: String
     
+  
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        // Use decodeIfPresent for the id; if missing, default to a new UUID.
         self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
-        self.title = try container.decode(String.self, forKey: .title)
+        self.title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
         self.bodyRTFData = try container.decodeIfPresent(Data.self, forKey: .bodyRTFData)
-        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
-        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
+
 
     
     private var bodyRTFData: Data?

@@ -153,38 +153,66 @@ class Note_Screen: UIViewController,
     }
     
     /// Saves the note by calling your API endpoint (PUT /api/notes/:id or POST /api/notes).
+
     private func saveNoteToServer(note: Note) {
-        guard let url = URL(string: "https://sprint-six.vercel.app/api/notes/\(note.id)") else {
+        // Use the endpoint for creating a new note.
+        guard let url = URL(string: "https://sprint-six.vercel.app/api/notes") else {
             print("Invalid URL")
             return
         }
         
+        // Convert the note's attributed body to HTML.
+        let range = NSRange(location: 0, length: note.body.length)
+        let options: [NSAttributedString.DocumentAttributeKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        var htmlString = ""
+        do {
+            let htmlData = try note.body.data(from: range, documentAttributes: options)
+            if let html = String(data: htmlData, encoding: .utf8) {
+                htmlString = html
+            }
+        } catch {
+            print("Error converting NSAttributedString to HTML: \(error)")
+            return
+        }
+        
+        // Prepare the JSON payload.
+        let payload: [String: Any] = [
+            "title": note.title,
+            "content": htmlString
+        ]
+        
         var request = URLRequest(url: url)
-        request.httpMethod = "PUT"  // or "POST" if creating a new note
+        request.httpMethod = "POST"  // Use POST to create a new note
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            request.httpBody = try encoder.encode(note)
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
         } catch {
-            print("Encoding error: \(error)")
+            print("Error encoding payload: \(error)")
             return
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Network error: \(error)")
+                print("Network error while saving note: \(error)")
                 return
             }
+            
             guard let data = data, !data.isEmpty else {
-                print("No data received.")
+                print("No data received after saving note.")
                 return
             }
+            
+            // Optionally, you could parse the response here.
             print("Successfully saved note to server.")
         }
         .resume()
     }
+
+
     
     @IBAction func didTapAaButton(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
