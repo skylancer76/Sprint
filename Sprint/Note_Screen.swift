@@ -286,7 +286,7 @@ class Note_Screen: UIViewController,
         if let formatVC = storyboard.instantiateViewController(withIdentifier: "FormatViewController") as? FormatViewController {
             formatVC.targetTextView = bodyTextView
             if let sheet = formatVC.sheetPresentationController {
-                sheet.detents = [.medium()]
+                sheet.detents = [.medium(), .large()]
             }
             present(formatVC, animated: true, completion: nil)
         }
